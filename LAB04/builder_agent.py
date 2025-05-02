@@ -25,7 +25,7 @@ Required_comps = [0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 4, 2, 1]
 
 # The components we can build, rest of the components are in the inventory
 Components = [House, Floor, Garret, Hall, Bedroom, Bathroom, LivingRoom]
-fitness_points = [15,8,6,1,1,1,1]
+fitness_points = [50, 15, 1, 1, 1, 1, 1]
 ComponentNames = ["House", "Floor", "Garret", "Hall", "Bedroom", "Bathroom", "LivingRoom"] # For printing purposes
 RawMaterials = ["door", "outside-door", "window", "wall-module", "toilet-seat", "tab", "shower-cabin"] # For printing purposes
 
