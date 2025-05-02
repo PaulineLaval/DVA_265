@@ -103,6 +103,14 @@ def Run():
         for i in buy:
             population[i].TryToBuy(material_agent)
 
+        # Try to swap material
+        if g%2 == 0:
+            # Attempt to swap materials between agents
+            for i in range(len(population)):
+                for j in range(i + 1, len(population)):
+                    population[i].swap_with(population[j])
+
+
         print(f"----GEN: {g}----")
         for i in range(len(population)):
             print(population[i].BuildOrder)

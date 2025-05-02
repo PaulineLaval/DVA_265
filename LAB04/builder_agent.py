@@ -90,6 +90,22 @@ class BuilderAgent:
                     # print(f"----Builder has bought necessary {RawMaterials[i]} from the seller.")
 
 
+    def swap_with(self, other_agent):
+        # Try to swap a component I have extra of, for one I need
+        for i in range(len(self.MissingItems)):
+            if self.MissingItems[i] > 0:
+                for j in range(len(self.Inventory)):
+                    # If I have extra of item j, and the other has extra of item i
+                    if self.Inventory[j] > 1 and other_agent.Inventory[i] > 1:
+                        # Swap one unit
+                        self.Inventory[j] -= 1
+                        self.Inventory[i] += 1
+                        other_agent.Inventory[j] += 1
+                        other_agent.Inventory[i] -= 1
+                        return True
+        return False
+
+
     def __repr__(self):
         return f'''INVENTORY: {self.Inventory}
                    BuildOrder: {self.BuildOrder}
