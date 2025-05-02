@@ -20,9 +20,6 @@ Hall = [0,1,1,1,0,0,0,0,0,0,0,0,0,0]
 # Garret components: 3 window, 1 door, 1 wall
 Garret = [1,0,3,1,0,0,0,0,0,0,0,0,0,0]
 
-# The length of build sequence, a number between 0-6 to specify which component to build
-Individual_size = 11
-
 # Our final goal is to build a house, so we need 1 house, 1 floor, 1 garret, 1 hall, 4 bedrooms, 2 bathrooms and 1 living room
 Required_comps = [0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 4, 2, 1]
 
@@ -40,14 +37,14 @@ class BuilderAgent:
 
         # Build plan for the agent
         # self.BuildOrder = [random.randint(0, 6) for _ in range(Individual_size)] # [1,1,3,4]
-        self.initialBuildOrder = random.permutation([0, 1, 2, 3, 4, 5, 6])
+        self.BuildOrder = random.sample(range(7), 7)
 
         self.funds = funds
         self.house = 0 
         self.Fitness = 0 # Fitness represents any new material build
-
-
-    def runOrder(self):
+        
+    
+    def RunOrder(self):
         for action in self.BuildOrder:
             # Components[action] returns an array with 14 elements (from the 7 defined above)
             # House,.. Index 7-13 in the inventory but 0-6 in the components so we add 7 to the index
@@ -55,17 +52,16 @@ class BuilderAgent:
             if self.TryToBuild(Components[action]) and self.Inventory[action+7] < Required_comps[action+7]:
                 self.Inventory = [self.Inventory[i] - Components[action][i] for i in range(len(self.Inventory))] # Used materials are removed from the inventory
                 self.Inventory[action+7] += 1 # New component build
-                print(f"-----Builder has built {ComponentNames[action]}.")
+                # print(f"-----Builder has built {ComponentNames[action]}.")
 
             
                 if action == 0: # If we build a house, increase fitness by 1
                     self.house += 1
-                    print(f"------Builder has built a house. Fitness: {self.Fitness}")
-
+                    # print(f"------Builder has built a house. Total houses Built: {self.house}.")
+                    self.Inventory[7]-= 1
                 self.Fitness += fitness_points[action]
 
-
-    def CalculateFitness(self):
+    def getFitness(self):
         return self.Fitness
     
     # component is a list of 14 elements 
@@ -74,6 +70,7 @@ class BuilderAgent:
             if self.Inventory[i] < component[i]:
                 if i < 7:
                     self.MissingItems[i] = component[i] - self.Inventory[i]
+                    # print(f"-----Builder is missing {self.MissingItems[i]} {RawMaterials[i]} to build {ComponentNames[self.BuildOrder[0]]}.")
                 return False
         return True
     
@@ -90,7 +87,7 @@ class BuilderAgent:
                     material_agent.Inventory[i] -= self.MissingItems[i]
                     self.Inventory[i] += self.MissingItems[i]
                     self.MissingItems[i] = 0
-                    print(f"----Builder has bought necessary {RawMaterials[i]} from the seller.")
+                    # print(f"----Builder has bought necessary {RawMaterials[i]} from the seller.")
 
 
     def __repr__(self):
