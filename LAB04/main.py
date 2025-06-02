@@ -1,11 +1,9 @@
 import random
 from material_agent import MaterialAgent
 from builder_agent import BuilderAgent
+from Parameters import *
 
-Builder_count = 3
-Crossover_rate = 0.6
-Mutation_rate = 0.05
-Initial_funds = 1000000
+
 
 def init_pop():
     return [BuilderAgent(Initial_funds) for _ in range(Builder_count)]
@@ -24,6 +22,18 @@ def select_parents(population: list[BuilderAgent], fitnesses):
     selected_indices = random.choices(range(len(population)), weights=selection_probs, k=2)
     return population[selected_indices[0]], population[selected_indices[1]]
 
+
+def select_parents2(population: list[BuilderAgent]):
+    fitnesses = [agent.Fitness for agent in population]
+    total_fitness = sum(fitnesses)
+    if total_fitness == 0:
+        return random.sample(range(len(population)), 2)  # Random selection if all fitnesses are zero
+
+    # Roulette wheel selection
+    selection_probs = [fitness / total_fitness for fitness in fitnesses]
+    selected_indices = random.choices(range(len(population)), weights=selection_probs, k=2)
+    return population[selected_indices[0]].getId(), population[selected_indices[1]].getId()
+
 # def crossover(builder1: BuilderAgent, builder2: BuilderAgent):
 #     if random.random() < Crossover_rate:
 #         point = random.randint(0, len(builder1.BuildOrder) - 1)
@@ -31,6 +41,7 @@ def select_parents(population: list[BuilderAgent], fitnesses):
 #         builder2.BuildOrder = builder2.BuildOrder[:point] + builder1.BuildOrder[point:]
 #     return builder1, builder2
 
+"""
 def crossover(builder1: BuilderAgent, builder2: BuilderAgent):
     if random.random() < Crossover_rate:
         point1 = random.randint(0, len(builder1.BuildOrder) - 1)
@@ -54,6 +65,29 @@ def crossover(builder1: BuilderAgent, builder2: BuilderAgent):
                 other_Agent.BuildOrder[i] = other_Agent.BuildOrder[point2]
                 other_Agent.BuildOrder[point2] = x
     return builder1, builder2 
+"""
+def crossover(builder1: BuilderAgent, builder2: BuilderAgent):
+
+    to_swap = [] #List containing information about the places we decided to swap out
+    #print("Crossover : ", builder1.BuildOrder, builder2.BuildOrder)
+
+
+    for i in range(len(builder1.BuildOrder)):
+        if random.random()<Crossover_rate:
+            to_swap.append((i, builder1.BuildOrder[i], builder2.BuildOrder[i]))
+
+
+    #print("Crossover : ", builder1.BuildOrder, builder2.BuildOrder)
+    #print("swaps: ", to_swap)
+
+    for elmt in to_swap:
+        builder1.BuildOrder.remove(elmt[2])
+        builder1.BuildOrder = builder1.BuildOrder[:elmt[0]] + [elmt[2]] + builder1.BuildOrder[elmt[0]:]
+        builder2.BuildOrder.remove(elmt[1])
+        builder2.BuildOrder = builder2.BuildOrder[:elmt[0]] + [elmt[1]] + builder2.BuildOrder[elmt[0]:]
+
+    #print("Done, results : ", builder1.BuildOrder, builder2.BuildOrder)
+    return builder1, builder2
 
 
 def initializing(population: list[BuilderAgent], material_agent):
@@ -74,7 +108,7 @@ def Run():
 
     fitnesses = initializing(population, material_agent) # To kick start things
 
-    for g in range(100):
+    for g in range(Number_Generations):
         if any(material_agent.Inventory[i] == 0 for i in range(len(material_agent.Inventory))):
             material_agent.Restock()
         #print(matAgent.Inventory)
@@ -82,15 +116,15 @@ def Run():
 
         # Iterating half, each time two parents are selected and crossover is performed on their buildOrder, rest properties are intact
         for i in range(len(population)//2):
-            i1, i2 = select_parents(range(0, len(population)), fitnesses)
+            i1, i2 = select_parents2(population)
             population[i1], population[i2] = crossover(population[i1], population[i2])
             # population[i1].Mutate(Mutation_rate)
             # population[i2].Mutate(Mutation_rate)
             # For some reasons the above code was not able to identify the Mutate function. So called it separately
             agent1:BuilderAgent = population[i1]
             agent2:BuilderAgent = population[i2]
-            agent1.Mutate(Mutation_rate)
-            agent2.Mutate(Mutation_rate)
+            agent1.mutation(Mutation_rate)
+            agent2.mutation(Mutation_rate)
             population[i1] = agent1
             population[i2] = agent2
 
@@ -115,7 +149,90 @@ def Run():
         for i in range(len(population)):
             print(population[i].BuildOrder)
             print(population[i].Fitness)
-            # print(population[i].funds)
+            print(population[i].funds)
             print(population[i].house)
 
-Run()
+
+def RunCycle(population: list[BuilderAgent], material_agent: MaterialAgent):
+    for builder in population:
+        #builder.printOrder()
+        builder.order_materials(material_agent)
+
+    material_agent.Restock()
+    material_agent.sell(population)
+    for builder in population:
+        builder.construct()
+
+
+def reinitialize_population(population: list[BuilderAgent]):
+    for builder in population:
+        builder.Fitness = 0
+        builder.house = 0
+        builder.funds = Initial_funds
+        builder.Inventory = [0,0,0,0,0,0,0,0,0,0,0,0,0,0]
+
+
+def Run2():
+    g = 0
+    average_fitness_per_gen = []
+    population = init_pop()
+    material_agent = MaterialAgent()
+
+    for g in range(Number_Generations):
+        for _ in range(Cycles_Per_Generation):
+            RunCycle(population, material_agent)
+
+        # Iterating half, each time two parents are selected and crossover is performed on their buildOrder, rest properties are intact
+        for i in range(len(population) // 2):
+            i1, i2 = select_parents2(population)
+            population[i1], population[i2] = crossover(population[i1], population[i2])
+            # population[i1].Mutate(Mutation_rate)
+            # population[i2].Mutate(Mutation_rate)
+            # For some reasons the above code was not able to identify the Mutate function. So called it separately
+            agent1: BuilderAgent = population[i1]
+            agent2: BuilderAgent = population[i2]
+            agent1.mutation(Mutation_rate)
+            agent2.mutation(Mutation_rate)
+            population[i1] = agent1
+            population[i2] = agent2
+
+        # Try to swap material
+        if g % 2 == 0:
+            # Attempt to swap materials between agents
+            for i in range(len(population)):
+                for j in range(i + 1, len(population)):
+                    population[i].swap_with(population[j])
+
+        print(f"----GEN: {g}----")
+        average_fitness = 0
+        for i in range(len(population)):
+            average_fitness += population[i].Fitness
+            print("\nbuilder n°", population[i].getId())
+            print("order : ", population[i].BuildOrder)
+            population[i].printOrder()
+            print("fitness :", population[i].Fitness)
+            print("funds : ", population[i].funds)
+            print("number of houses built : ", population[i].house)
+            print("inventory : ", population[i].Inventory)
+        average_fitness_per_gen.append(average_fitness / len(population))
+
+        reinitialize_population(population)
+
+    print(average_fitness_per_gen)
+
+
+
+
+#Run()
+"""
+b1 = BuilderAgent(Initial_funds)
+b2 = BuilderAgent(Initial_funds)
+b3 = BuilderAgent(Initial_funds)
+
+m = MaterialAgent()
+pop = [b1, b2, b3]
+for _ in range(Cycles_Per_Generation):
+    RunCycle(pop, m)
+"""
+Run2()
+
