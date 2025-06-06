@@ -4,27 +4,16 @@ from builder_agent import BuilderAgent
 from Parameters import *
 
 
-
 def init_pop():
     return [BuilderAgent(Initial_funds) for _ in range(Builder_count)]
 
 def evaluate_population(population: list[BuilderAgent]):
-    fitnesses = [agent.getFitness() for agent in population]
+    fitnesses = [agent.get_fitness() for agent in population]
     return fitnesses
 
-def select_parents(population: list[BuilderAgent], fitnesses):
-    total_fitness = sum(fitnesses)
-    if total_fitness == 0:
-        return random.sample(range(len(population)), 2)  # Random selection if all fitnesses are zero
-    
-    # Roulette wheel selection
-    selection_probs = [fitness / total_fitness for fitness in fitnesses]
-    selected_indices = random.choices(range(len(population)), weights=selection_probs, k=2)
-    return population[selected_indices[0]], population[selected_indices[1]]
 
-
-def select_parents2(population: list[BuilderAgent]):
-    fitnesses = [agent.Fitness for agent in population]
+def select_parents(population: list[BuilderAgent]):
+    fitnesses = [agent.fitness for agent in population]
     total_fitness = sum(fitnesses)
     if total_fitness == 0:
         return random.sample(range(len(population)), 2)  # Random selection if all fitnesses are zero
@@ -34,39 +23,13 @@ def select_parents2(population: list[BuilderAgent]):
     selected_indices = random.choices(range(len(population)), weights=selection_probs, k=2)
     return population[selected_indices[0]].getId(), population[selected_indices[1]].getId()
 
-# def crossover(builder1: BuilderAgent, builder2: BuilderAgent):
-#     if random.random() < Crossover_rate:
-#         point = random.randint(0, len(builder1.BuildOrder) - 1)
-#         builder1.BuildOrder = builder1.BuildOrder[:point] + builder2.BuildOrder[point:]
-#         builder2.BuildOrder = builder2.BuildOrder[:point] + builder1.BuildOrder[point:]
-#     return builder1, builder2
 
-"""
 def crossover(builder1: BuilderAgent, builder2: BuilderAgent):
-    if random.random() < Crossover_rate:
-        point1 = random.randint(0, len(builder1.BuildOrder) - 1)
-        point2 = random.randint(0, len(builder1.BuildOrder) - 1)
-        while point1 == point2:
-            point2 = random.randint(0, len(builder1.BuildOrder) - 1)
+    """If two builders crossover, on a specific placement in the list BuildOrder, they check which element is there for
+    the other builder, and "slide" their correspondant element to the position. Ex: [1, 2, 3, 4] and [3, 2, 1, 4],
+    where the 1st position is chosen : the first parent sees that 3 is in the 1st position of the second, and puts it
+    first, to give [3, 1, 2, 4]. The second slides the 1 to the first position, giving [1, 3, 3, 4]"""
 
-        better_Agent = builder1 if builder1.Fitness > builder2.Fitness else builder2
-        other_Agent = builder2 if better_Agent == builder1 else builder1
-
-        desiredNumber1 = better_Agent.BuildOrder[point1]
-        desiredNumber2 = better_Agent.BuildOrder[point2]
-
-        for i in range(len(other_Agent.BuildOrder)):
-            if other_Agent.BuildOrder[i] == desiredNumber1:
-                x = other_Agent.BuildOrder[i]
-                other_Agent.BuildOrder[i] = other_Agent.BuildOrder[point1]
-                other_Agent.BuildOrder[point1] = x
-            elif other_Agent.BuildOrder[i] == desiredNumber2:
-                x = other_Agent.BuildOrder[i]
-                other_Agent.BuildOrder[i] = other_Agent.BuildOrder[point2]
-                other_Agent.BuildOrder[point2] = x
-    return builder1, builder2 
-"""
-def crossover(builder1: BuilderAgent, builder2: BuilderAgent):
 
     to_swap = [] #List containing information about the places we decided to swap out
     #print("Crossover : ", builder1.BuildOrder, builder2.BuildOrder)
@@ -90,70 +53,11 @@ def crossover(builder1: BuilderAgent, builder2: BuilderAgent):
     return builder1, builder2
 
 
-def initializing(population: list[BuilderAgent], material_agent):
-    for agent in population:
-        agent.RunOrder()
-        agent.TryToBuy(material_agent)
-    fitnesses = evaluate_population(population)
-    return fitnesses
+def run_cycle(population: list[BuilderAgent], material_agent: MaterialAgent):
+    """Each builder goes through their order of operations to choose what to order, then places their order with the
+    material agent. The material agents then decides how to prioritise what it sells to who (here at random)
+    Finally, the builder agents build as many elements as they can, following their BuildOrder"""
 
-
-
-def Run():
-    g=0
-    population=init_pop()
-    fitnesses = evaluate_population(population)
-    print(fitnesses)
-    material_agent = MaterialAgent()
-
-    fitnesses = initializing(population, material_agent) # To kick start things
-
-    for g in range(Number_Generations):
-        if any(material_agent.Inventory[i] == 0 for i in range(len(material_agent.Inventory))):
-            material_agent.Restock()
-        #print(matAgent.Inventory)
-        g += 1
-
-        # Iterating half, each time two parents are selected and crossover is performed on their buildOrder, rest properties are intact
-        for i in range(len(population)//2):
-            i1, i2 = select_parents2(population)
-            population[i1], population[i2] = crossover(population[i1], population[i2])
-            # population[i1].Mutate(Mutation_rate)
-            # population[i2].Mutate(Mutation_rate)
-            # For some reasons the above code was not able to identify the Mutate function. So called it separately
-            agent1:BuilderAgent = population[i1]
-            agent2:BuilderAgent = population[i2]
-            agent1.mutation(Mutation_rate)
-            agent2.mutation(Mutation_rate)
-            population[i1] = agent1
-            population[i2] = agent2
-
-        for agent in population:
-            agent.RunOrder()
-            
-        fitnesses = evaluate_population(population)
-        
-        buy = select_parents(range(0, len(population)), fitnesses)
-        for i in buy:
-            population[i].TryToBuy(material_agent)
-
-        # Try to swap material
-        if g%2 == 0:
-            # Attempt to swap materials between agents
-            for i in range(len(population)):
-                for j in range(i + 1, len(population)):
-                    population[i].swap_with(population[j])
-
-
-        print(f"----GEN: {g}----")
-        for i in range(len(population)):
-            print(population[i].BuildOrder)
-            print(population[i].Fitness)
-            print(population[i].funds)
-            print(population[i].house)
-
-
-def RunCycle(population: list[BuilderAgent], material_agent: MaterialAgent):
     for builder in population:
         #builder.printOrder()
         builder.order_materials(material_agent)
@@ -166,13 +70,13 @@ def RunCycle(population: list[BuilderAgent], material_agent: MaterialAgent):
 
 def reinitialize_population(population: list[BuilderAgent]):
     for builder in population:
-        builder.Fitness = 0
-        builder.house = 0
+        builder.fitness = 0
+        builder.houses = 0
         builder.funds = Initial_funds
         builder.Inventory = [0,0,0,0,0,0,0,0,0,0,0,0,0,0]
 
 
-def Run2():
+def run():
     g = 0
     average_fitness_per_gen = []
     population = init_pop()
@@ -180,11 +84,11 @@ def Run2():
 
     for g in range(Number_Generations):
         for _ in range(Cycles_Per_Generation):
-            RunCycle(population, material_agent)
+            run_cycle(population, material_agent)
 
         # Iterating half, each time two parents are selected and crossover is performed on their buildOrder, rest properties are intact
         for i in range(len(population) // 2):
-            i1, i2 = select_parents2(population)
+            i1, i2 = select_parents(population)
             population[i1], population[i2] = crossover(population[i1], population[i2])
             # population[i1].Mutate(Mutation_rate)
             # population[i2].Mutate(Mutation_rate)
@@ -206,13 +110,13 @@ def Run2():
         print(f"----GEN: {g}----")
         average_fitness = 0
         for i in range(len(population)):
-            average_fitness += population[i].Fitness
+            average_fitness += population[i].fitness
             print("\nbuilder n°", population[i].getId())
             print("order : ", population[i].BuildOrder)
-            population[i].printOrder()
-            print("fitness :", population[i].Fitness)
+            population[i].print_build_order()
+            print("fitness :", population[i].fitness)
             print("funds : ", population[i].funds)
-            print("number of houses built : ", population[i].house)
+            print("number of houses built : ", population[i].houses)
             print("inventory : ", population[i].Inventory)
         average_fitness_per_gen.append(average_fitness / len(population))
 
@@ -221,18 +125,5 @@ def Run2():
     print(average_fitness_per_gen)
 
 
-
-
-#Run()
-"""
-b1 = BuilderAgent(Initial_funds)
-b2 = BuilderAgent(Initial_funds)
-b3 = BuilderAgent(Initial_funds)
-
-m = MaterialAgent()
-pop = [b1, b2, b3]
-for _ in range(Cycles_Per_Generation):
-    RunCycle(pop, m)
-"""
-Run2()
+run()
 

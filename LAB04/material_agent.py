@@ -1,7 +1,5 @@
 import random
-
 from Parameters import *
-
 
 class MaterialAgent:
     def __init__(self):
