@@ -12,7 +12,7 @@ class MaterialAgent:
         # 1. door, 2. outside-door, 3. window, 4. wall-module, 5. toilet-seat, 6. tab, 7. shower-cabin
 
     def Restock(self):
-        self.Inventory = [100, 100, 100, 100, 100, 100, 100]
+        self.Inventory = [500, 500, 500, 500, 2000, 1000, 500]
 
     def reinitialize_orders(self):
         self.orders = [[0 for _ in range(7)] for _ in range(Builder_count) ]

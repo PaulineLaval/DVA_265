@@ -1,11 +1,11 @@
 from xmlrpc.client import Fault
 
-Builder_count = 10
-Number_Generations = 20
+Builder_count = 20
+Number_Generations = 100
 Cycles_Per_Generation = 10
 Crossover_rate = 0.6
 Mutation_rate = 0.05
-Initial_funds = 3000000
+Initial_funds = 10000000
 
 #Order used for the whole project of each type of component
 # 0. door, 1. outside-door, 2. window, 3. wall, 4. toilet, 5. tab, 6. shower
@@ -30,7 +30,7 @@ Garret = [1,0,3,1,0,0,0,0,0,0,0,0,0,0]
 
 # The components we can build, rest of the components are in the inventory
 Components = [House, Floor, Garret, Hall, Bedroom, Bathroom, LivingRoom]
-FitnessPoints = [50, 10, 10, 1, 1, 1, 1]
+FitnessPoints = [50, 10, 1, 1, 1, 1, 1]
 ComponentNames = ["House", "Floor", "Garret", "Hall", "Bedroom", "Bathroom", "LivingRoom"] # For printing purposes
 RawMaterials = ["door", "outside-door", "window", "wall-module", "toilet-seat", "tab", "shower-cabin"] # For printing purposes
 
